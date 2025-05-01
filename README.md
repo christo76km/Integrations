@@ -1,0 +1,2 @@
+# Integrations
+Integrations between aplications
