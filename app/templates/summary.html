@@ -3,12 +3,24 @@
 
 <h2>Summary</h2>
 
-<form method="get" action="/summary" class="filters">
+<form method="get" action="{{ url_for('main.summary_view') }}" class="filters">
+
     <input name="artist" placeholder="Artist" value="{{ filters.artist or '' }}">
     <input name="album" placeholder="Album" value="{{ filters.album or '' }}">
     <input name="track" placeholder="Track" value="{{ filters.track or '' }}">
-    <input type="date" name="date_from">
-    <input type="date" name="date_to">
+
+    <input type="date" name="date_from" value="{{ filters.date_from_str }}">
+    <input type="date" name="date_to" value="{{ filters.date_to_str }}">
+
+    <label style="margin-left: 10px;">
+        Timezone:
+        <select name="tz">
+            <option value="local" {% if filters.tz==
+            'local' %}selected{% endif %}>Local</option>
+            <option value="utc" {% if filters.tz==
+            'utc' %}selected{% endif %}>UTC</option>
+        </select>
+    </label>
 
     <label style="margin-left: 10px;">
         Top:
@@ -23,101 +35,107 @@
     </label>
 
     <button type="submit">Filter</button>
+    <!-- Quick presets -->
+    <button type="submit" name="preset" value="today">Today</button>
+    <button type="submit" name="preset" value="last7">Last 7 days</button>
+    <button type="submit" name="preset" value="last30">Last month</button>
+    <button type="submit" name="preset" value="last365">Last year</button>
+    <button type="submit" name="preset" value="clear_dates">Clear dates</button>
 </form>
 
 <hr>
 
 <h3>Top Artists</h3>
 <table>
-<tr>
-  <th>Artist</th>
-  <th>Scrobbles</th>
-  <th style="width: 200px;"></th>
-</tr>
+    <tr>
+        <th>Artist</th>
+        <th>Scrobbles</th>
+        <th style="width: 200px;"></th>
+    </tr>
 
-{% for r in top_artists %}
-<tr>
-  <td>
-    <a href="/scrobbles?artist={{ r.artist|urlencode }}">
-      {{ r.artist }}
-    </a>
-  </td>
+    {% for r in top_artists %}
+    <tr>
+        <td>
+            <a href="/scrobbles?artist={{ r.artist|urlencode }}">
+                {{ r.artist }}
+            </a>
+        </td>
 
-  <td align="right">{{ r.scrobbles }}</td>
+        <td align="right">{{ r.scrobbles }}</td>
 
-  <td>
-    <div class="bar-container">
-      <div class="bar"
-           style="width: {{ (r.scrobbles / max_artist * 100) | round(1) }}%;">
-      </div>
-    </div>
-  </td>
-</tr>
-{% endfor %}
+        <td>
+            <div class="bar-container">
+                <div class="bar"
+                     style="width: {{ (r.scrobbles / max_artist * 100) | round(1) }}%;">
+                </div>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
 </table>
 
 <h3>Top Albums</h3>
 <table>
-<tr>
-  <th>Album</th>
-  <th>Artist</th>
-  <th>Scrobbles</th>
-  <th style="width: 200px;"></th>
-</tr>
+    <tr>
+        <th>Album</th>
+        <th>Artist</th>
+        <th>Scrobbles</th>
+        <th style="width: 200px;"></th>
+    </tr>
 
-{% for r in top_albums %}
-<tr>
-  <td>
-    <a href="/scrobbles?artist={{ r.artist|urlencode }}&album={{ r.album|urlencode }}">
-      {{ r.album }}
-    </a>
-  </td>
+    {% for r in top_albums %}
+    <tr>
+        <td>
+            <a href="/scrobbles?artist={{ r.artist|urlencode }}&album={{ r.album|urlencode }}">
+                {{ r.album }}
+            </a>
+        </td>
 
-  <td>{{ r.artist }}</td>
-  <td align="right">{{ r.scrobbles }}</td>
+        <td>{{ r.artist }}</td>
+        <td align="right">{{ r.scrobbles }}</td>
 
-  <td>
-    <div class="bar-container">
-      <div class="bar"
-           style="width: {{ (r.scrobbles / max_album * 100) | round(1) }}%;">
-      </div>
-    </div>
-  </td>
-</tr>
-{% endfor %}
+        <td>
+            <div class="bar-container">
+                <div class="bar"
+                     style="width: {{ (r.scrobbles / max_album * 100) | round(1) }}%;">
+                </div>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
 </table>
 
 <h3>Top Tracks</h3>
 <table>
-<tr>
-  <th>Track</th>
-  <th>Artist</th>
-  <th>Album</th>
-  <th>Scrobbles</th>
-  <th style="width: 200px;"></th>
-</tr>
+    <tr>
+        <th>Track</th>
+        <th>Artist</th>
+        <th>Album</th>
+        <th>Scrobbles</th>
+        <th style="width: 200px;"></th>
+    </tr>
 
-{% for r in top_tracks %}
-<tr>
-  <td>
-    <a href="/scrobbles?artist={{ r.artist|urlencode }}&album={{ r.album|urlencode }}&track={{ r.track|urlencode }}">
-      {{ r.track }}
-    </a>
-  </td>
+    {% for r in top_tracks %}
+    <tr>
+        <td>
+            <a href="/scrobbles?artist={{ r.artist|urlencode }}&album={{ r.album|urlencode }}&track={{ r.track|urlencode }}">
+                {{ r.track }}
+            </a>
+        </td>
 
-  <td>{{ r.artist }}</td>
-  <td>{{ r.album }}</td>
-  <td align="right">{{ r.scrobbles }}</td>
+        <td>{{ r.artist }}</td>
+        <td>{{ r.album }}</td>
+        <td align="right">{{ r.scrobbles }}</td>
 
-  <td>
-    <div class="bar-container">
-      <div class="bar"
-           style="width: {{ (r.scrobbles / max_track * 100) | round(1) }}%;">
-      </div>
-    </div>
-  </td>
-</tr>
-{% endfor %}
+        <td>
+            <div class="bar-container">
+                <div class="bar"
+                     style="width: {{ (r.scrobbles / max_track * 100) | round(1) }}%;">
+                </div>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
 </table>
 
 {% endblock %}

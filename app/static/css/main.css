@@ -122,3 +122,17 @@ th {
 .top-nav a.active {
   text-decoration: underline;
 }
+
+
+.range-info {
+  margin: 8px 0 12px 0;
+  padding: 6px 10px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.filters button {
+  margin-left: 6px;
+}

@@ -28,36 +28,50 @@
 
 <form method="post" action="{{ url_for('main.import_scrobbles') }}"
       style="display:inline;">
-  <button type="submit"
-          onclick="return confirm('Import new scrobbles from Last.fm?')">
-    ⬇ Import new scrobbles
-  </button>
+    <button type="submit"
+            onclick="return confirm('Import new scrobbles from Last.fm?')">
+        ⬇ Import new scrobbles
+    </button>
 </form>
 
-<form method="get" action="/scrobbles" class="filters">
-    <input name="artist" placeholder="Artist"
-           value="{{ filters.artist if filters and filters.artist }}">
+<form method="get" action="{{ url_for('main.scrobbles_view') }}" class="filters">
 
-    <input name="album" placeholder="Album"
-           value="{{ filters.album if filters and filters.album }}">
+    <input name="artist" placeholder="Artist" value="{{ filters.artist or '' }}">
+    <input name="album" placeholder="Album" value="{{ filters.album or '' }}">
+    <input name="track" placeholder="Track" value="{{ filters.track or '' }}">
 
-    <input name="track" placeholder="Track"
-           value="{{ filters.track if filters and filters.track }}">
-
-    <input type="date" name="date_from">
-    <input type="date" name="date_to">
-
+    <input type="date" name="date_from" value="{{ filters.date_from_str }}">
+    <input type="date" name="date_to" value="{{ filters.date_to_str }}">
 
     <label style="margin-left: 10px;">
-        <input type="checkbox" name="show_plays"
-               {% if filters.get('show_plays') %}checked{% endif %}>
+        Timezone:
+        <select name="tz">
+            <option value="local" {% if filters.tz==
+            'local' %}selected{% endif %}>Local</option>
+            <option value="utc" {% if filters.tz==
+            'utc' %}selected{% endif %}>UTC</option>
+        </select>
+    </label>
+
+    <label style="margin-left: 10px;">
+        <input type="checkbox" name="show_plays" {% if filters.show_plays %}checked{% endif %}>
         Show all plays
     </label>
 
     <button type="submit">Filter</button>
 
+    <!-- Quick presets -->
+    <button type="submit" name="preset" value="today">Today</button>
+    <button type="submit" name="preset" value="last7">Last 7 days</button>
+    <button type="submit" name="preset" value="last30">Last month</button>
+    <button type="submit" name="preset" value="last365">Last year</button>
+    <button type="submit" name="preset" value="clear_dates">Clear dates</button>
 </form>
-
+{% if filters.range_label %}
+<div class="range-info">
+    Showing: <strong>{{ filters.range_label }}</strong>
+</div>
+{% endif %}
 <hr>
 
 <table>

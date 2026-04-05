@@ -61,6 +61,16 @@ def apply_presets(args: dict, tz):
         args["date_from"] = start.strftime("%Y-%m-%d")
         args["date_to"] = today.strftime("%Y-%m-%d")
 
+    elif preset == "last30":
+        start = today - timedelta(days=30)  # inclusive 30 days including today
+        args["date_from"] = start.strftime("%Y-%m-%d")
+        args["date_to"] = today.strftime("%Y-%m-%d")
+
+    elif preset == "last365":
+        start = today - timedelta(days=365)  # inclusive 365 days including today
+        args["date_from"] = start.strftime("%Y-%m-%d")
+        args["date_to"] = today.strftime("%Y-%m-%d")
+
     elif preset == "clear_dates":
         args["date_from"] = ""
         args["date_to"] = ""
@@ -98,36 +108,67 @@ def api_update():
     )
     return {"status": "ok"}
 
+
 @bp.route("/scrobbles")
 def scrobbles_view():
-    from datetime import datetime
-
-    def to_uts(date_str):
-        if not date_str:
-            return None
-        return int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
-
     sort = request.args.get("sort", "artist")
     direction = request.args.get("dir", "asc")
 
+    tz_mode = request.args.get("tz", "local")  # 'local' or 'utc'
+    tz = get_tz(tz_mode)
+
+    # Work with args as dict (so we can redirect after preset)
+    args = request.args.to_dict(flat=True)
+
+    # Apply presets and redirect to clean URL
+    args, changed = apply_presets(args, tz)
+    if changed:
+        return redirect(url_for("main.scrobbles_view", **args))
+
+    # Parse dates (strings)
+    d_from = parse_date_ymd(args.get("date_from", ""))
+    d_to = parse_date_ymd(args.get("date_to", ""))
+
+    date_from_uts = None
+    date_to_uts = None
+
+    if d_from:
+        date_from_uts, _ = day_start_end_to_uts(d_from, tz)
+    if d_to:
+        _, date_to_uts = day_start_end_to_uts(d_to, tz)
+
+    # Active range label for UI
+    range_label = None
+    if date_from_uts or date_to_uts:
+        fmt = "%Y-%m-%d %H:%M:%S"
+        left = datetime.fromtimestamp(date_from_uts, tz).strftime(fmt) if date_from_uts else "…"
+        right = datetime.fromtimestamp(date_to_uts, tz).strftime(fmt) if date_to_uts else "…"
+        tz_label = "UTC" if tz_mode == "utc" else f"Local ({datetime.now(tz).tzname()})"
+        range_label = f"{left} → {right} ({tz_label})"
+
     filters = {
-        "artist": request.args.get("artist") or None,
-        "album": request.args.get("album") or None,
-        "track": request.args.get("track") or None,
-        "date_from": to_uts_start(request.args.get("date_from")),
-        "date_to": to_uts_end(request.args.get("date_to")),
-        "show_plays": request.args.get("show_plays") == "on",
+        "artist": args.get("artist") or None,
+        "album": args.get("album") or None,
+        "track": args.get("track") or None,
+
+        # keep original strings for form inputs
+        "date_from_str": args.get("date_from") or "",
+        "date_to_str": args.get("date_to") or "",
+
+        # numeric boundaries for SQL
+        "date_from": date_from_uts,
+        "date_to": date_to_uts,
+
+        "show_plays": args.get("show_plays") == "on",
+        "tz": tz_mode,
+        "range_label": range_label,
+
         "sort": sort,
         "dir": direction,
     }
 
     rows = fetch_scrobbles(filters, sort, direction)
-
-    return render_template(
-        "index.html",
-        rows=rows,
-        filters=filters
-    )
+    return render_template("index.html", rows=rows, filters=filters)
 
 @bp.route("/api/bulk_update", methods=["POST"])
 def api_bulk_update():
@@ -151,18 +192,43 @@ def api_plays():
 
 @bp.route("/summary")
 def summary_view():
-    from datetime import datetime
     from .services.scrobbles_service import (
         fetch_top_artists,
         fetch_top_albums,
         fetch_top_tracks,
     )
 
-    def to_uts(date_str):
-        if not date_str:
-            return None
-        return int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
+    tz_mode = request.args.get("tz", "local")  # 'local' or 'utc'
+    tz = get_tz(tz_mode)
 
+    # Work with args as dict (so we can redirect after preset)
+    args = request.args.to_dict(flat=True)
+
+    # Apply presets and redirect to clean URL
+    args, changed = apply_presets(args, tz)
+    if changed:
+        return redirect(url_for("main.summary_view", **args))
+
+    # Parse dates (strings)
+    d_from = parse_date_ymd(args.get("date_from", ""))
+    d_to = parse_date_ymd(args.get("date_to", ""))
+
+    date_from_uts = None
+    date_to_uts = None
+
+    if d_from:
+        date_from_uts, _ = day_start_end_to_uts(d_from, tz)
+    if d_to:
+        _, date_to_uts = day_start_end_to_uts(d_to, tz)
+
+    # Active range label for UI
+    range_label = None
+    if date_from_uts or date_to_uts:
+        fmt = "%Y-%m-%d %H:%M:%S"
+        left = datetime.fromtimestamp(date_from_uts, tz).strftime(fmt) if date_from_uts else "…"
+        right = datetime.fromtimestamp(date_to_uts, tz).strftime(fmt) if date_to_uts else "…"
+        tz_label = "UTC" if tz_mode == "utc" else f"Local ({datetime.now(tz).tzname()})"
+        range_label = f"{left} → {right} ({tz_label})"
     top = request.args.get("top", "20")
 
     try:
@@ -175,8 +241,15 @@ def summary_view():
         "artist": request.args.get("artist") or None,
         "album": request.args.get("album") or None,
         "track": request.args.get("track") or None,
-        "date_from": to_uts(request.args.get("date_from")),
-        "date_to": to_uts(request.args.get("date_to")),
+        # keep original strings for form inputs
+        "date_from_str": args.get("date_from") or "",
+        "date_to_str": args.get("date_to") or "",
+
+        # numeric boundaries for SQL
+        "date_from": date_from_uts,
+        "date_to": date_to_uts,
+        "tz": tz_mode,
+        "range_label": range_label,
         "top": top,
     }
 
