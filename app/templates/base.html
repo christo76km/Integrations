@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Scrobbles</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+
+
+<nav class="top-nav">
+  <a href="{{ url_for('main.scrobbles_view') }}"
+     class="{% if request.endpoint == 'main.scrobbles_view' %}active{% endif %}">
+     Scrobbles
+  </a>
+  |
+  <a href="{{ url_for('main.summary_view') }}"
+     class="{% if request.endpoint == 'main.summary_view' %}active{% endif %}">
+     Summary
+  </a>
+</nav>
+
+
+
+{% block content %}{% endblock %}
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<ul class="flashes">
+    {% for category, message in messages %}
+    <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

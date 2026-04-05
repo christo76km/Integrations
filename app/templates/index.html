@@ -1,0 +1,147 @@
+{% macro sort_link(label, col) %}
+{% set is_active = filters.sort == col %}
+{% set next_dir = 'desc' if is_active and filters.dir == 'asc' else 'asc' %}
+
+<a href="{{ url_for(
+      'main.scrobbles_view',
+      artist=filters.artist,
+      album=filters.album,
+      track=filters.track,
+      date_from=request.args.get('date_from'),
+      date_to=request.args.get('date_to'),
+      show_plays='on' if filters.show_plays else None,
+      sort=col,
+      dir=next_dir
+  ) }}">
+    {{ label }}
+    {% if is_active %}
+    {% if filters.dir == 'asc' %}▲{% else %}▼{% endif %}
+    {% endif %}
+</a>
+{% endmacro %}
+
+
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Scrobbles</h2>
+
+<form method="post" action="{{ url_for('main.import_scrobbles') }}"
+      style="display:inline;">
+  <button type="submit"
+          onclick="return confirm('Import new scrobbles from Last.fm?')">
+    ⬇ Import new scrobbles
+  </button>
+</form>
+
+<form method="get" action="/scrobbles" class="filters">
+    <input name="artist" placeholder="Artist"
+           value="{{ filters.artist if filters and filters.artist }}">
+
+    <input name="album" placeholder="Album"
+           value="{{ filters.album if filters and filters.album }}">
+
+    <input name="track" placeholder="Track"
+           value="{{ filters.track if filters and filters.track }}">
+
+    <input type="date" name="date_from">
+    <input type="date" name="date_to">
+
+
+    <label style="margin-left: 10px;">
+        <input type="checkbox" name="show_plays"
+               {% if filters.get('show_plays') %}checked{% endif %}>
+        Show all plays
+    </label>
+
+    <button type="submit">Filter</button>
+
+</form>
+
+<hr>
+
+<table>
+
+    <thead>
+    <tr>
+        <th>{{ sort_link("Artist", "artist") }}</th>
+        <th>{{ sort_link("Album", "album") }}</th>
+        <th>{{ sort_link("Track", "track") }}</th>
+        <th>{{ sort_link("Plays", "plays") }}</th>
+        <th>{{ sort_link("Last played", "last_played") }}</th>
+
+        {% if filters.get('show_plays') %}
+        <th>All plays</th>
+        {% endif %}
+    </tr>
+    </thead>
+
+
+    <tbody>
+    {% for row in rows %}
+    <tr>
+
+        <td class="editable"
+            data-id="{{ row.scrobble_id }}"
+            data-type="artist"
+            data-artist="{{ row.artist }}"
+            data-album="{{ row.album }}"
+            data-track="{{ row.track }}">
+            {{ row.artist }}
+        </td>
+
+
+        <td class="editable"
+            data-id="{{ row.scrobble_id }}"
+            data-type="album"
+            data-artist="{{ row.artist }}"
+            data-album="{{ row.album }}"
+            data-track="{{ row.track }}">
+            {{ row.album }}
+        </td>
+
+
+        <td class="editable"
+            data-id="{{ row.scrobble_id }}"
+            data-type="track"
+            data-artist="{{ row.artist }}"
+            data-album="{{ row.album }}"
+            data-track="{{ row.track }}">
+            {{ row.track }}
+        </td>
+
+
+        <td align="right">{{ row.play_count }}</td>
+        <td>{{ row.last_played }}</td>
+
+        {% if filters.get('show_plays') %}
+        <td>
+            {% set key = (row.artist, row.album, row.track) %}
+
+            <button type="button"
+                    class="toggle-plays"
+                    data-loaded="0"
+                    data-artist="{{ row.artist }}"
+                    data-album="{{ row.album }}"
+                    data-track="{{ row.track }}"
+                    data-target="plays-{{ loop.index }}"
+                    data-label="Show ({{ row.play_count }})"
+                    aria-expanded="false">
+                Show ({{ row.play_count }})
+            </button>
+
+            <div id="plays-{{ loop.index }}" class="plays-panel" hidden>
+                <div class="plays-loading">Loading…</div>
+            </div>
+        </td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if not rows %}
+<p>No results.</p>
+{% endif %}
+
+{% endblock %}

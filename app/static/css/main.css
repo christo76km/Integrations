@@ -1,0 +1,124 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+.filters {
+  margin-bottom: 15px;
+}
+
+.filters input {
+  margin-right: 6px;
+  padding: 4px 6px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+
+td.editable {
+  cursor: pointer;
+}
+
+td.editable:hover {
+  background-color: #eef;
+}
+
+td {
+  white-space: nowrap;
+}
+
+td:nth-child(1),
+td:nth-child(2),
+td:nth-child(3) {
+  white-space: normal;
+  max-width: 350px;
+}
+
+.toggle-plays {
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.plays-panel {
+  margin-top: 6px;
+  max-height: 180px;     /* keeps huge lists manageable */
+  overflow: auto;
+  border: 1px solid #ddd;
+  padding: 6px;
+  background: #fafafa;
+}
+
+.plays-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+
+.bar-container {
+  width: 100%;
+  background: #f0f0f0;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.bar {
+  height: 100%;
+  background: #4a90e2;
+  border-radius: 3px;
+}
+
+th a {
+  text-decoration: none;
+  color: inherit;
+}
+
+th a:hover {
+  text-decoration: underline;
+}
+
+th {
+  white-space: nowrap;
+}
+
+
+.flashes { list-style: none; padding: 0; }
+.flashes .success { color: green; }
+.flashes .error { color: red; }
+
+
+.top-nav {
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.top-nav a {
+  text-decoration: none;
+  margin-right: 8px;
+  color: #2c3e50;
+}
+
+.top-nav a:hover {
+  text-decoration: underline;
+}
+
+
+.top-nav a.active {
+  text-decoration: underline;
+}
