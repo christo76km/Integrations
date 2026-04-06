@@ -22,7 +22,7 @@
 -- TODO easy selection of scrobbles/summary for selected artist
 -- DONE easier navigation by date
 -- TODO most popular albums from listenbrainz/lastfm
--- TODO All plays according to the date filter
+-- DONE All plays according to the date filter
 -- TODO Pages in summary?
 -- TODO The page with updates
 -- TODO Filter on scrobbles with updates

@@ -144,19 +144,30 @@
         <td>
             {% set key = (row.artist, row.album, row.track) %}
 
-            <button type="button"
+            <button
+                    id="btn-{{ loop.index }}"
+                    type="button"
                     class="toggle-plays"
                     data-loaded="0"
+                    data-mode=""
+                    data-target="plays-{{ loop.index }}"
+                    data-btn-id="btn-{{ loop.index }}"
+
                     data-artist="{{ row.artist }}"
                     data-album="{{ row.album }}"
                     data-track="{{ row.track }}"
-                    data-target="plays-{{ loop.index }}"
+
+                    data-date-from="{{ filters.date_from_str }}"
+                    data-date-to="{{ filters.date_to_str }}"
+                    data-tz="{{ filters.tz }}"
+                    data-has-date="{{ 1 if (filters.date_from_str or filters.date_to_str) else 0 }}"
+
                     data-label="Show ({{ row.play_count }})"
                     aria-expanded="false">
                 Show ({{ row.play_count }})
             </button>
 
-            <div id="plays-{{ loop.index }}" class="plays-panel" hidden>
+            <div id="plays-{{ loop.index }}" class="plays-panel" data-btn="btn-{{ loop.index }}" hidden>
                 <div class="plays-loading">Loading…</div>
             </div>
         </td>
@@ -169,7 +180,7 @@
 {% if total_pages > 1 %}
 <nav class="pagination">
 
-  {% if page > 1 %}
+    {% if page > 1 %}
     <a href="{{ url_for(
         'main.scrobbles_view',
         artist=filters.artist,
@@ -199,16 +210,16 @@
         per_page=per_page,
         page=page-1
     ) }}">Previous</a>
-  {% endif %}
+    {% endif %}
 
-  {% set start = page - 2 if page - 2 > 1 else 1 %}
-  {% set end = page + 2 if page + 2 < total_pages else total_pages %}
+    {% set start = page - 2 if page - 2 > 1 else 1 %}
+    {% set end = page + 2 if page + 2 < total_pages else total_pages %}
 
-  {% for p in range(start, end + 1) %}
+    {% for p in range(start, end + 1) %}
     {% if p == page %}
-      <span class="current">{{ p }}</span>
+    <span class="current">{{ p }}</span>
     {% else %}
-      <a href="{{ url_for(
+    <a href="{{ url_for(
           'main.scrobbles_view',
           artist=filters.artist,
           album=filters.album,
@@ -223,9 +234,9 @@
           page=p
       ) }}">{{ p }}</a>
     {% endif %}
-  {% endfor %}
+    {% endfor %}
 
-  {% if page < total_pages %}
+    {% if page < total_pages %}
     <a href="{{ url_for(
         'main.scrobbles_view',
         artist=filters.artist,
@@ -255,7 +266,7 @@
         per_page=per_page,
         page=total_pages
     ) }}">Last</a>
-  {% endif %}
+    {% endif %}
 
 </nav>
 {% endif %}

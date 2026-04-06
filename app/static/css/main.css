@@ -150,3 +150,20 @@ th {
   font-weight: bold;
   margin-right: 6px;
 }
+
+.plays-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.plays-controls button {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.plays-meta {
+  font-size: 12px;
+  color: #555;
+}

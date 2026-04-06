@@ -208,14 +208,37 @@ def api_bulk_update():
     return {"status": "ok", "inserted": inserted}
 
 
+
 @bp.route("/api/plays")
 def api_plays():
     artist = request.args.get("artist") or ""
     album  = request.args.get("album") or ""
     track  = request.args.get("track") or ""
 
-    plays = fetch_group_plays(artist, album, track)
-    return jsonify(plays)
+    tz_mode = request.args.get("tz", "local")
+    mode = request.args.get("mode", "filtered")  # filtered | all
+
+    tz = get_tz(tz_mode)
+
+    d_from = parse_date_ymd(request.args.get("date_from", ""))
+    d_to   = parse_date_ymd(request.args.get("date_to", ""))
+
+    uts_from = None
+    uts_to = None
+
+    # Apply date limits only in filtered mode
+    if mode == "filtered":
+        if d_from:
+            uts_from, _ = day_start_end_to_uts(d_from, tz)
+        if d_to:
+            _, uts_to = day_start_end_to_uts(d_to, tz)
+
+    plays = fetch_group_plays(artist, album, track, uts_from, uts_to)
+    return jsonify({
+        "mode": mode,
+        "count": len(plays),
+        "plays": plays
+    })
 
 @bp.route("/summary")
 def summary_view():

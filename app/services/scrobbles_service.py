@@ -119,40 +119,60 @@ def fetch_plays_for_groups(rows, filters):
     return result
 
 
-def fetch_group_plays(artist, album, track):
+def fetch_group_plays(artist, album, track, uts_from=None, uts_to=None):
     db = get_db()
-    rows = db.execute("""
-                      WITH ranked_updates AS (SELECT scrobble_id,
-                                                     record_type,
-                                                     updated_value,
-                                                     ROW_NUMBER() OVER (
-                                                         PARTITION BY scrobble_id, record_type
-                                                         ORDER BY update_date DESC
-                                                         ) AS rn
-                                              FROM scrobble_updates),
-                           latest_updates AS (SELECT scrobble_id, record_type, updated_value
-                                              FROM ranked_updates
-                                              WHERE rn = 1),
-                           effective_scrobbles AS (SELECT s.id                                     AS scrobble_id,
-                                                          s.uts,
-                                                          COALESCE(ua.updated_value, s.artist)     AS artist,
-                                                          COALESCE(ual.updated_value, s.album, '') AS album,
-                                                          COALESCE(ut.updated_value, s.track)      AS track
-                                                   FROM scrobbles s
-                                                            LEFT JOIN latest_updates ua
-                                                                      ON ua.scrobble_id = s.id AND ua.record_type = 'artist'
-                                                            LEFT JOIN latest_updates ual
-                                                                      ON ual.scrobble_id = s.id AND ual.record_type = 'album'
-                                                            LEFT JOIN latest_updates ut
-                                                                      ON ut.scrobble_id = s.id AND ut.record_type = 'track')
-                      SELECT datetime(uts, 'unixepoch') AS played_at, uts
-                      FROM effective_scrobbles
-                      WHERE artist = ?
-                        AND album = ?
-                        AND track = ?
-                      ORDER BY uts DESC
-                      """, (artist, album, track)).fetchall()
 
+    sql = """
+        WITH ranked_updates AS (
+            SELECT
+                scrobble_id,
+                record_type,
+                updated_value,
+                ROW_NUMBER() OVER (
+                    PARTITION BY scrobble_id, record_type
+                    ORDER BY update_date DESC
+                ) AS rn
+            FROM scrobble_updates
+        ),
+        latest_updates AS (
+            SELECT scrobble_id, record_type, updated_value
+            FROM ranked_updates
+            WHERE rn = 1
+        ),
+        effective_scrobbles AS (
+            SELECT
+                s.id AS scrobble_id,
+                s.uts,
+                COALESCE(ua.updated_value, s.artist) AS artist,
+                COALESCE(ual.updated_value, s.album, '') AS album,
+                COALESCE(ut.updated_value, s.track) AS track
+            FROM scrobbles s
+            LEFT JOIN latest_updates ua
+              ON ua.scrobble_id = s.id AND ua.record_type='artist'
+            LEFT JOIN latest_updates ual
+              ON ual.scrobble_id = s.id AND ual.record_type='album'
+            LEFT JOIN latest_updates ut
+              ON ut.scrobble_id = s.id AND ut.record_type='track'
+        )
+        SELECT datetime(uts,'unixepoch') AS played_at, uts
+        FROM effective_scrobbles
+        WHERE artist = ?
+          AND album  = ?
+          AND track  = ?
+    """
+
+    params = [artist, album, track]
+
+    if uts_from is not None:
+        sql += " AND uts >= ?"
+        params.append(uts_from)
+    if uts_to is not None:
+        sql += " AND uts <= ?"
+        params.append(uts_to)
+
+    sql += " ORDER BY uts DESC"
+
+    rows = db.execute(sql, params).fetchall()
     return [dict(r) for r in rows]
 
 BASE_CTE = """
