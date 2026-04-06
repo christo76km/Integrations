@@ -25,3 +25,8 @@
 -- TODO All plays according to the date filter
 -- TODO Pages in summary?
 -- TODO The page with updates
+-- TODO Filter on scrobbles with updates
+-- TODO Fix of dates (1970)
+-- TODO  add “Page X of Y” indicator
+-- TODO add keyboard shortcuts (← →)
+-- TODO view by dates
