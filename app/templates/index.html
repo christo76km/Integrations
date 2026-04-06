@@ -1,18 +1,27 @@
 {% macro sort_link(label, col) %}
 {% set is_active = filters.sort == col %}
 {% set next_dir = 'desc' if is_active and filters.dir == 'asc' else 'asc' %}
+{# When sorting, it’s usually best UX to reset to page 1 #}
+{% set target_page = 1 if reset_page else page %}
 
-<a href="{{ url_for(
+
+
+  <a href="{{ url_for(
       'main.scrobbles_view',
+      view=filters.view,
       artist=filters.artist,
       album=filters.album,
       track=filters.track,
-      date_from=request.args.get('date_from'),
-      date_to=request.args.get('date_to'),
+      date_from=filters.date_from_str,
+      date_to=filters.date_to_str,
+      tz=filters.tz,
       show_plays='on' if filters.show_plays else None,
+      per_page=per_page,
+      page=target_page,
       sort=col,
       dir=next_dir
   ) }}">
+
     {{ label }}
     {% if is_active %}
     {% if filters.dir == 'asc' %}▲{% else %}▼{% endif %}
@@ -53,11 +62,27 @@
         </select>
     </label>
 
+
+    <label style="margin-left:10px;">
+        View:
+        <select name="view" onchange="this.form.submit()">
+            <option value="grouped" {% if filters.view==
+            'grouped' %}selected{% endif %}>
+            Grouped (by track)
+            </option>
+            <option value="list" {% if filters.view==
+            'list' %}selected{% endif %}>
+            List (all scrobbles)
+            </option>
+        </select>
+    </label>
+
+{% if filters.view == 'grouped' %}
     <label style="margin-left: 10px;">
         <input type="checkbox" name="show_plays" {% if filters.show_plays %}checked{% endif %}>
         Show all plays
     </label>
-
+{% endif %}
 
     <label style="margin-left:10px;">
         Rows:
@@ -85,7 +110,7 @@
 </div>
 {% endif %}
 <hr>
-
+{% if filters.view == 'grouped' %}
 <table>
 
     <thead>
@@ -176,6 +201,29 @@
     {% endfor %}
     </tbody>
 </table>
+
+{% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>{{ sort_link("Played at", "played_at") }}</th>
+        <th>{{ sort_link("Artist", "artist") }}</th>
+        <th>{{ sort_link("Album", "album") }}</th>
+        <th>{{ sort_link("Track", "track") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.played_at }}</td>
+        <td>{{ r.artist }}</td>
+        <td>{{ r.album }}</td>
+        <td>{{ r.track }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
 
 {% if total_pages > 1 %}
 <nav class="pagination">

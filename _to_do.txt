@@ -30,3 +30,133 @@
 -- TODO  add “Page X of Y” indicator
 -- TODO add keyboard shortcuts (← →)
 -- TODO view by dates
+-- TODO Preview bulk update + Undo
+-- TODO Import history + last import status
+Create import_runs table:
+
+run time, inserted count, duration, success/failure message
+
+Show on /scrobbles top bar:
+
+“Last import: 2026‑04‑05 11:20 (inserted 42)”
+
+Benefit: visibility + troubleshooting.
+-- TODO Missing metadata dashboard
+A dedicated view to fix data quality:
+
+“tracks with missing album”
+“artists with inconsistent naming”
+“same track name across many albums”
+“unknown MBIDs”
+
+Provide “Fix” workflow directly from this view.
+Benefit: targeted cleanup instead of discovering issues ad-hoc.
+-- TODO Persist UI state (page size, sort, tz, show_plays) in session
+Right now, every navigation relies on query params. A very nice UX bump:
+
+remember last per_page, sort/dir, tz, show_plays in session
+still allow overriding via URL when present
+
+Benefit: app “feels personal” immediately.
+-- TODO Add “Reset filters” + “Share link” buttons
+Reset clears artist/album/track/date/preset and returns to defaults
+Share link copies the current URL (already encodes filters)
+-- TODO Improve filtering options
+Exact match toggle vs LIKE mask
+Case-insensitive searches (LIKE in SQLite is case-insensitive for ASCII but can be surprising with diacritics; you can normalize with LOWER() consistently)
+
+Nice addition: add contains / starts with / equals dropdown.
+-- TODO Materialized “effective scrobbles” cache table (optional but powerful)
+Your queries frequently compute “effective” artist/album/track by joining scrobble_updates. For larger datasets + many updates, you can maintain a cache table:
+
+effective_scrobbles_cache(scrobble_id, artist, album, track, last_update_ts)
+update it whenever an override is inserted (single scrobble or bulk)
+then your main queries become much simpler and faster (no window functions every time)
+
+Benefit: dramatic speedups as scrobble_updates grows.
+-- TODO Add missing indexes (verify)
+Make sure you have:
+
+scrobbles(uts)
+scrobbles(artist), scrobbles(album), scrobbles(track) or combined indexes if needed
+scrobble_updates(scrobble_id, record_type, update_date DESC)
+
+Benefit: predictable performance even after lots of bulk updates.
+-- TODO Add “Preview bulk update” (shows number of affected rows)
+Before applying bulk update:
+
+call /api/bulk_preview to return count
+show: “This will update 173 rows. Continue?”
+
+Benefit: prevents accidents like the album-missing scenario you hit earlier.
+-- TODO Add “Undo last change” + “History” view
+Because updates are append-only, undo is easy:
+
+undo by deleting latest update rows for a given batch timestamp (or add batch_id)
+create /history page listing changes (who/when/what) even in single-user mode
+
+Benefit: confidence + audit trail becomes user-friendly.
+-- TODO Separate “Row-scoped” vs “Global rename” actions
+You already discovered the nuance:
+
+default bulk action should be row-scoped (artist+album+track)
+add explicit “Rename artist everywhere” button for true global rename
+
+Benefit: safety by default, power when needed.
+-- TODO Add “Trends” view
+Examples:
+
+scrobbles per day/week/month
+top artists this month vs last month
+streaks (days listened)
+“new artists discovered” per period
+
+Benefit: turns your app from browsing into insight.
+-- TODO Background import (non-blocking)
+Right now, import runs during request handling. Improve by:
+
+background thread (simple)
+or a lightweight job queue (RQ/Celery if you want more robust)
+
+UI can show:
+
+“Import started… refresh in a few seconds”
+“Import finished: inserted X”
+
+Benefit: no UI freeze.
+-- TODO Add automated tests (pytest)
+At minimum:
+
+date filter conversion correctness (single-day, timezone local/utc)
+bulk update scoping (ensuring it doesn’t spill to other albums)
+sorting whitelist safety
+pagination correctness
+
+Benefit: prevents regressions as you keep adding features.
+-- TODO Add code quality tooling
+black + ruff (or flake8)
+pre-commit hooks
+
+Benefit: consistent style + fewer bugs.
+-- TODO Authentication
+If this tool might be deployed anywhere shared:
+
+add login (Flask-Login)
+restrict import and bulk updates to authenticated users
+
+Benefit: safe deployment beyond localhost.
+
+-- TODO CSV/JSON export
+export filtered scrobbles list
+export summary tables
+export update history
+
+Benefit: easy analysis in Excel/Power BI.
+-- TODO Scrobble list view against the list grouped by track
+Alternative view of scrobbles
+Export current list view to CSV
+Group list view by day
+-- TODO Heatmap calendar (GitHub‑style)
+-- TODO Play streak detection
+-- TODO liked songs
+-- TODO nicer filtering

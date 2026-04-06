@@ -331,3 +331,85 @@ def count_scrobbles(filters):
         "date_to": filters["date_to"],
     }).fetchone()
     return row[0]
+
+def fetch_scrobble_list(filters, sort_col="played_at", sort_dir="desc", limit=50, offset=0):
+    db = get_db()
+
+    # Only allow safe sort columns in list mode
+    SORT_MAP = {
+        "played_at": "uts",
+        "artist": "artist",
+        "album": "album",
+        "track": "track",
+    }
+    sort_sql = SORT_MAP.get(sort_col, "uts")
+    dir_sql = "DESC" if sort_dir == "desc" else "ASC"
+
+    sql = f"""
+    WITH ranked_updates AS (
+        SELECT scrobble_id, record_type, updated_value,
+               ROW_NUMBER() OVER (
+                   PARTITION BY scrobble_id, record_type
+                   ORDER BY update_date DESC
+               ) AS rn
+        FROM scrobble_updates
+    ),
+    latest_updates AS (
+        SELECT scrobble_id, record_type, updated_value
+        FROM ranked_updates WHERE rn = 1
+    )
+    SELECT
+        s.id AS scrobble_id,
+        datetime(s.uts, 'unixepoch') AS played_at,
+        COALESCE(ua.updated_value, s.artist) AS artist,
+        COALESCE(ual.updated_value, s.album) AS album,
+        COALESCE(ut.updated_value, s.track) AS track
+    FROM scrobbles s
+    LEFT JOIN latest_updates ua
+      ON ua.scrobble_id = s.id AND ua.record_type='artist'
+    LEFT JOIN latest_updates ual
+      ON ual.scrobble_id = s.id AND ual.record_type='album'
+    LEFT JOIN latest_updates ut
+      ON ut.scrobble_id = s.id AND ut.record_type='track'
+    WHERE
+        (:artist IS NULL OR artist LIKE :artist)
+    AND (:album IS NULL OR album LIKE :album)
+    AND (:track IS NULL OR track LIKE :track)
+    AND (:date_from IS NULL OR s.uts >= :date_from)
+    AND (:date_to IS NULL OR s.uts <= :date_to)
+    ORDER BY {sort_sql} {dir_sql}
+    LIMIT :limit OFFSET :offset
+    """
+
+    params = {
+        "artist": f"%{filters['artist']}%" if filters["artist"] else None,
+        "album": f"%{filters['album']}%" if filters["album"] else None,
+        "track": f"%{filters['track']}%" if filters["track"] else None,
+        "date_from": filters["date_from"],
+        "date_to": filters["date_to"],
+        "limit": limit,
+        "offset": offset,
+    }
+
+    return db.execute(sql, params).fetchall()
+
+def count_scrobble_list(filters):
+    db = get_db()
+    sql = """
+    SELECT COUNT(*)
+    FROM scrobbles s
+    WHERE
+        (:artist IS NULL OR s.artist LIKE :artist)
+    AND (:album IS NULL OR s.album LIKE :album)
+    AND (:track IS NULL OR s.track LIKE :track)
+    AND (:date_from IS NULL OR s.uts >= :date_from)
+    AND (:date_to IS NULL OR s.uts <= :date_to)
+    """
+    row = db.execute(sql, {
+        "artist": f"%{filters['artist']}%" if filters["artist"] else None,
+        "album": f"%{filters['album']}%" if filters["album"] else None,
+        "track": f"%{filters['track']}%" if filters["track"] else None,
+        "date_from": filters["date_from"],
+        "date_to": filters["date_to"],
+    }).fetchone()
+    return row[0]

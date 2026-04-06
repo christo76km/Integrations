@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from .services.scrobbles_service import fetch_scrobbles, fetch_plays_for_groups
-from .services.scrobbles_service import fetch_group_plays
-from .services.scrobbles_service import count_scrobbles
+from .services.scrobbles_service import fetch_group_plays, fetch_scrobble_list
+from .services.scrobbles_service import count_scrobbles, count_scrobble_list
 from .services.updates_service import add_update, bulk_update
 from datetime import datetime, date, time as dtime, timedelta, timezone
 from flask import redirect, url_for, flash
@@ -121,6 +121,10 @@ def scrobbles_view():
     page = max(page, 1)
     per_page = per_page if per_page in (25, 50, 100) else 50
 
+    view = request.args.get("view", "grouped")
+    if view not in ("grouped", "list"):
+        view = "grouped"
+
     tz = get_tz(tz_mode)
 
     # Work with args as dict (so we can redirect after preset)
@@ -172,20 +176,20 @@ def scrobbles_view():
         "sort": sort,
         "dir": direction,
     }
+    filters["view"] = view
 
-    total_rows = count_scrobbles(filters)
+    if filters["view"] == "grouped":
+        total_rows = count_scrobbles(filters)
+    else:
+        total_rows = count_scrobble_list(filters)
     total_pages = max(1, (total_rows + per_page - 1) // per_page)
-
     page = min(page, total_pages)
     offset = (page - 1) * per_page
 
-    rows = fetch_scrobbles(
-        filters,
-        sort,
-        direction,
-        limit=per_page,
-        offset=offset
-    )
+    if filters["view"] == "grouped":
+        rows = fetch_scrobbles(filters, sort, direction, limit=per_page, offset=offset)
+    else:
+        rows = fetch_scrobble_list(filters, sort, direction, limit=per_page, offset=offset)
 
     return render_template(
         "index.html",
