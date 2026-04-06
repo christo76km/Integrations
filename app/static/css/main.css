@@ -136,3 +136,17 @@ th {
 .filters button {
   margin-left: 6px;
 }
+
+.pagination {
+  margin-top: 15px;
+}
+
+.pagination a {
+  margin-right: 6px;
+  text-decoration: none;
+}
+
+.pagination .current {
+  font-weight: bold;
+  margin-right: 6px;
+}

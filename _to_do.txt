@@ -2,7 +2,7 @@
 -- DONE Mini bar charts (pure CSS)
 -- TODO Toggle: count plays vs count days played
 -- TODO Export summary to Excel
--- TODO Fix of filter by date
+-- DONE Fix of filter by date
 -- DONE Button to upload of new scrobbles
 -- TODO Button to skip to summary from scrobbles list
 -- TODO Upload of mbids to database after a change
@@ -15,9 +15,13 @@
 -- TODO sorting in summary
 -- DONE updated too much entries
 -- TODO what models.py is for?
--- TODO Navigation between pages
--- TODO Pages in scrobbles and in summary
+-- DONE Navigation between pages
+-- DONE Pages in scrobbles
 -- TODO opening summary for selected artist from scrobbles
 -- TODO flag saying if data is fixed or not
 -- TODO easy selection of scrobbles/summary for selected artist
--- TODO easier navigation by date
+-- DONE easier navigation by date
+-- TODO most popular albums from listenbrainz/lastfm
+-- TODO All plays according to the date filter
+-- TODO Pages in summary?
+-- TODO The page with updates

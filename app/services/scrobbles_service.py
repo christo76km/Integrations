@@ -37,7 +37,8 @@ SQL = """
         AND (:date_from IS NULL OR uts >= :date_from)
         AND (:date_to IS NULL OR uts <= :date_to)
       GROUP BY artist, album, track
-      ORDER BY {sort_col} {sort_dir}, artist, album, track; \
+      ORDER BY {sort_col} {sort_dir}, artist, album, track
+      LIMIT :limit OFFSET :offset; \
       """
 
 
@@ -50,7 +51,7 @@ SORT_COLUMNS = {
 }
 
 
-def fetch_scrobbles(filters, sort_col="artist", sort_dir="asc"):
+def fetch_scrobbles(filters, sort_col="artist", sort_dir="asc", limit=50, offset=0):
     db = get_db()
 
     sort_col = SORT_COLUMNS.get(sort_col, "artist")
@@ -63,6 +64,12 @@ def fetch_scrobbles(filters, sort_col="artist", sort_dir="asc"):
         "date_from": int(filters["date_from"]) if filters.get("date_from") else None,
         "date_to": int(filters["date_to"]) if filters.get("date_to") else None,
     }
+
+    params.update({
+        "limit": limit,
+        "offset": offset,
+    })
+
     sql = SQL.format(sort_col=sort_col, sort_dir=sort_dir)
     rows = db.execute(sql, params).fetchall()
     return [dict(r) for r in rows]
@@ -253,3 +260,54 @@ def fetch_top_tracks(filters, limit=20):
             "limit": limit,
         },
     ).fetchall()
+
+
+def count_scrobbles(filters):
+    db = get_db()
+    sql = """
+    WITH ranked_updates AS (
+        SELECT scrobble_id, record_type, updated_value,
+               ROW_NUMBER() OVER (
+                   PARTITION BY scrobble_id, record_type
+                   ORDER BY update_date DESC
+               ) AS rn
+        FROM scrobble_updates
+    ),
+    latest_updates AS (
+        SELECT scrobble_id, record_type, updated_value
+        FROM ranked_updates WHERE rn = 1
+    ),
+    effective_scrobbles AS (
+        SELECT
+            COALESCE(ua.updated_value, s.artist) AS artist,
+            COALESCE(ual.updated_value, s.album) AS album,
+            COALESCE(ut.updated_value, s.track) AS track,
+            s.uts
+        FROM scrobbles s
+        LEFT JOIN latest_updates ua
+          ON ua.scrobble_id = s.id AND ua.record_type='artist'
+        LEFT JOIN latest_updates ual
+          ON ual.scrobble_id = s.id AND ual.record_type='album'
+        LEFT JOIN latest_updates ut
+          ON ut.scrobble_id = s.id AND ut.record_type='track'
+    )
+    SELECT COUNT(*) FROM (
+        SELECT 1
+        FROM effective_scrobbles
+        WHERE
+            (:artist IS NULL OR artist LIKE :artist)
+        AND (:album IS NULL OR album LIKE :album)
+        AND (:track IS NULL OR track LIKE :track)
+        AND (:date_from IS NULL OR uts >= :date_from)
+        AND (:date_to IS NULL OR uts <= :date_to)
+        GROUP BY artist, album, track
+    )
+    """
+    row = db.execute(sql, {
+        "artist": f"%{filters['artist']}%" if filters["artist"] else None,
+        "album": f"%{filters['album']}%" if filters["album"] else None,
+        "track": f"%{filters['track']}%" if filters["track"] else None,
+        "date_from": filters["date_from"],
+        "date_to": filters["date_to"],
+    }).fetchone()
+    return row[0]
