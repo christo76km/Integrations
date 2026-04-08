@@ -160,3 +160,6 @@ Group list view by day
 -- TODO Play streak detection
 -- TODO liked songs
 -- TODO nicer filtering
+-- TODO remote database
+-- TODO database in the network (drive connected to router?)
+-- TODO change to PostGres/MySQL

@@ -1,13 +1,13 @@
-import sqlite3
 from flask import g, current_app
+import psycopg
+from psycopg.rows import dict_row
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(
-            current_app.config["DATABASE"],
-            detect_types=sqlite3.PARSE_DECLTYPES
+        g.db = psycopg.connect(
+            current_app.config["DATABASE_URL"],
+            row_factory=dict_row
         )
-        g.db.row_factory = sqlite3.Row
     return g.db
 
 def close_db(e=None):
